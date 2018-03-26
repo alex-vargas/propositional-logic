@@ -90,6 +90,8 @@ public class Solution{
             fomulaTestCase.add("a->!c");
             String ms = "(a&b)->c";
             fomulaTestCase.add(ms);
+            ms = "(a&b)->!c";
+            fomulaTestCase.add(ms);
             ms = "(a->b)&(a->c)";
             fomulaTestCase.add(ms);
             ms = "a|(b&c)";
@@ -106,7 +108,7 @@ public class Solution{
                 formula = fomulaTestCase.get(i);
                 mprintln("Testing formula " + i + " = " + formula);
                 transformToNNF();
-                mprintln(formulaNNF);
+                mprintln("NNF= " + formulaNNF);
                 mprintln("After distributing or");
                 distributeOR();
                 mprintln(formulaCNF);
@@ -171,7 +173,45 @@ public class Solution{
             if(Character.isLetter(formulaCNF.charAt(i - 1)))
                 distributeOR();
         }
-        formulaCNF = cleanFormula(formulaCNF);
+        for (i = -1; (i = formulaCNF.indexOf(")|", i + 1)) != -1; i++) {
+            int indexOfEndOfParen = i;
+            char candidateToNextSymbol = formulaCNF.charAt(indexOfEndOfParen + 2);
+            if(candidateToNextSymbol != '('){
+                String candidateToNextSymbolStr = String.valueOf(candidateToNextSymbol);
+                if(candidateToNextSymbol == '!')
+                {
+                    indexOfEndOfParen++;
+                    candidateToNextSymbolStr = "!".concat(String.valueOf(formulaCNF.charAt(indexOfEndOfParen + 2)));
+                }
+                String equivalentExpression = "";
+                int indexOfStartInnerClause = getIndexOfStartInnerClause(indexOfEndOfParen - 2, formulaCNF);
+                mprintln("index of start: " + indexOfStartInnerClause + " - formula: " + formulaCNF);
+                for(j = indexOfStartInnerClause + 1; j < indexOfEndOfParen; j++){
+                    char nextSymbol = formulaCNF.charAt(j);
+                    if(Character.isLetter(nextSymbol)){
+                        equivalentExpression = equivalentExpression.concat("(" + candidateToNextSymbolStr + "|"
+                            + String.valueOf(nextSymbol) + ")");
+                    }else if(nextSymbol == '!'){
+                        j++;
+                        equivalentExpression = equivalentExpression.concat("(" + candidateToNextSymbolStr + "|"
+                            + "!" + String.valueOf(formulaCNF.charAt(j)) + ")");
+                    }else if(nextSymbol == '|' || nextSymbol == '&'){
+                        equivalentExpression = equivalentExpression.concat(String.valueOf(nextSymbol));
+                    }else if(nextSymbol == '('){
+                        int indexOfEndInnerInnerClause = getIndexOfEndInnerClause(j + 1, formulaCNF);
+                        equivalentExpression = equivalentExpression.concat(formulaCNF.substring(j, indexOfEndInnerInnerClause + 1));
+                        j = indexOfEndInnerInnerClause;
+                    }
+                }
+                String stringToReplace = formulaCNF.substring(indexOfStartInnerClause, indexOfEndOfParen + 3);
+                formulaCNF = formulaCNF.replace(stringToReplace, equivalentExpression);
+            }
+        }
+        for (i = -1; (i = formulaCNF.indexOf(")|", i + 1)) != -1; i++) {
+            if(Character.isLetter(formulaCNF.charAt(i + 2)))
+                distributeOR();
+        }
+        
     }
     /*
     *   Remove double parentheses
@@ -225,6 +265,20 @@ public class Solution{
             formulaNNF = formulaNNF.replace(stringToReplace, equivalentExpression);
             applyDeMorganLaw();
         }
+    }
+    private static int getIndexOfStartInnerClause(int index, String formula){
+        int numberOfParentheses = 1;
+        char nextSymbol;
+        while(numberOfParentheses > 0){
+            nextSymbol = formula.charAt(index);
+            if(nextSymbol == '(')
+                numberOfParentheses--;
+            else if(nextSymbol == ')')
+                numberOfParentheses++;
+            index--;
+        }
+        index++;
+        return index;
     }
     private static int getIndexOfEndInnerClause(int index, String formula){
         int numberOfParentheses = 1;
