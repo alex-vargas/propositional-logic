@@ -98,6 +98,8 @@ public class Solution{
             fomulaTestCase.add(ms);
             ms = "a|(b&(c&D))";
             fomulaTestCase.add(ms);
+            ms = "(a|b)&a|(c&d)";
+            fomulaTestCase.add(ms);
 
             for(int i = 0; i < fomulaTestCase.size();i++){
                 clearFormulas();
@@ -123,21 +125,32 @@ public class Solution{
             char previousSymbol = formulaCNF.charAt(indexOfStartOrParen - 1);
             if(previousSymbol != ')'){
                 String previousSymbolStr = String.valueOf(previousSymbol);
+                int negationPrevSymbol = 0;
                 if(indexOfStartOrParen > 1 && formulaCNF.charAt(indexOfStartOrParen - 2) == '!')
                 {
-                    // indexOfStartOrParen--;
+                    negationPrevSymbol++;
+                    indexOfStartOrParen--;
                     previousSymbolStr = "!".concat(String.valueOf(previousSymbol));
                 }
-                String equivalentExpression = "(";
-                mprintln("Value of index = " + String.valueOf(indexOfStartOrParen));
-                int indexOfEndInnerClause = getIndexOfEndInnerClause(indexOfStartOrParen + 1, formulaCNF);
-                for(j = indexOfStartOrParen + 2; j < indexOfEndInnerClause; j++){
+                String equivalentExpression = "";
+                int indexOfEndInnerClause = getIndexOfEndInnerClause(indexOfStartOrParen + 2 + negationPrevSymbol, formulaCNF);
+                boolean negatedNextSymbol = false;
+                String negatedNextSymbolStr = "";
+
+                for(j = indexOfStartOrParen + 2 + negationPrevSymbol; j < indexOfEndInnerClause; j++){
                     char nextSymbol = formulaCNF.charAt(j);
                     if(Character.isLetter(nextSymbol)){
                         if(equivalentExpression.endsWith(")"))
-                            equivalentExpression = equivalentExpression.concat(String.valueOf(formulaCNF.charAt(j - 1)));
+                            if(negatedNextSymbol)
+                                equivalentExpression = equivalentExpression.concat(String.valueOf(formulaCNF.charAt(j - 2)));
+                            else
+                                equivalentExpression = equivalentExpression.concat(String.valueOf(formulaCNF.charAt(j - 1)));
+                        if(negatedNextSymbol)
+                            negatedNextSymbolStr = "!";
                         equivalentExpression = equivalentExpression.concat("(" + previousSymbolStr + "|"
-                            + String.valueOf(nextSymbol) + ")");
+                            + negatedNextSymbolStr + String.valueOf(nextSymbol) + ")");
+                        negatedNextSymbolStr = "";
+                        negatedNextSymbol = false;
                     }else if(nextSymbol == '('){
                         if(equivalentExpression.endsWith(")"))
                             equivalentExpression = equivalentExpression.concat(String.valueOf(formulaCNF.charAt(j - 1)));
@@ -146,10 +159,11 @@ public class Solution{
                         equivalentExpression = equivalentExpression.concat(formulaCNF.substring(j + 1, indexOfEndInnerInnerClause));
                         equivalentExpression = equivalentExpression.concat(")");
                         j = indexOfEndInnerInnerClause;
-                    }
+                    }else if(nextSymbol == '!')
+                        negatedNextSymbol = true;
                 }
-                equivalentExpression = equivalentExpression.concat(")");
-                String stringToReplace = formulaCNF.substring(indexOfStartOrParen - 1, j+1);
+                // equivalentExpression = equivalentExpression.concat(")");
+                String stringToReplace = formulaCNF.substring(indexOfStartOrParen - 1 - negationPrevSymbol, j+1);
                 formulaCNF = formulaCNF.replace(stringToReplace, equivalentExpression);
             }
         }
@@ -157,6 +171,15 @@ public class Solution{
             if(Character.isLetter(formulaCNF.charAt(i - 1)))
                 distributeOR();
         }
+        formulaCNF = cleanFormula(formulaCNF);
+    }
+    /*
+    *   Remove double parentheses
+    */
+    private static String cleanFormula(String formulaToClean){
+        formulaToClean = formulaToClean.replace("((", "(");
+        formulaToClean = formulaToClean.replace("))", ")");
+        return formulaToClean;
     }
     private static void transformToNNF(){
         formulaNNF = formula;
