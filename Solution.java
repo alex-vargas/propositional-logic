@@ -45,9 +45,16 @@ public class Solution{
             //If formula has been entered, show options
             printMenu();
             String action = readValue();
+            if(true){
+                //Call test cases
+                callTestCases(action);
+            }else
             switch(action){
                 case "1":
                     transformToCNF();
+                    break;
+                case "2":
+                    transformToDNF();
                     break;
                 case "7":
                     clearFormulas();
@@ -64,12 +71,8 @@ public class Solution{
     private static void clearFormulas(){
         formula = formulaNNF = formulaCNF = formulaDNF = formulaFullDNF = formulaFullCNF = "";
     }
-    private static void transformToCNF(){
-        mprintln("Transforming " + formula + " to CNF");
-        //Following algorithm from wikipedia https://en.wikipedia.org/wiki/Conjunctive_normal_form
+    private static void callTestCases(String action){
         if(formulaNNF.equals(""))
-            // transformToNNF();
-            //test NNF
         {
             fomulaTestCase.add("a");
             fomulaTestCase.add("a->b");
@@ -100,23 +103,123 @@ public class Solution{
             fomulaTestCase.add(ms);
             ms = "a|(b&(c&D))";
             fomulaTestCase.add(ms);
-            ms = "(a|b)&a|(c&d)";
+            ms = "(a|b)&(a|(c&d))";
             fomulaTestCase.add(ms);
-
-            for(int i = 0; i < fomulaTestCase.size();i++){
-                clearFormulas();
-                formula = fomulaTestCase.get(i);
-                mprintln("Testing formula " + i + " = " + formula);
-                transformToNNF();
-                mprintln("NNF= " + formulaNNF);
-                mprintln("After distributing or");
-                distributeOR();
-                mprintln(formulaCNF);
+            ms = "a&(b&c)";
+            fomulaTestCase.add(ms);
+            ms = "a&(b|c)";
+            fomulaTestCase.add(ms);
+            ms = "(b&c)&a";
+            fomulaTestCase.add(ms);
+            ms = "(b|c)&a";
+            fomulaTestCase.add(ms);
+            ms = "a&(b|(c|d))";
+            fomulaTestCase.add(ms);
+            ms = "(a&b)|(a&(c|d))";
+            fomulaTestCase.add(ms);
+            ms = "!!a&(b|c)";
+            fomulaTestCase.add(ms);
+            ms = "!(!a|!b|!c)";
+            fomulaTestCase.add(ms);
+            ms = "!((a&b)->c)";
+            fomulaTestCase.add(ms);
+            ms = "!((a&b)->!c)";
+            fomulaTestCase.add(ms);
+        }
+        for(int i = 0; i < fomulaTestCase.size();i++){
+            clearFormulas();
+            formula = fomulaTestCase.get(i);
+            mprintln("");
+            mprintln("Testing formula " + i + " = " + formula);
+            transformToNNF();
+            mprintln("NNF formula: " + formulaNNF);
+            if(action.equals("1"))
+                transformToCNF();
+            else if(action.equals("2"))
+                transformToDNF();
+        }
+    }
+    private static void transformToDNF(){
+        mprintln("Transforming " + formula + " to DNF");
+        if(formulaNNF.equals(""))
+            transformToNNF();
+        if(formulaDNF.equals(""))
+            distributeAND();
+        formulaDNF = cleanFormula(formulaDNF);
+        mprintln(formulaDNF);
+    }
+    private static void distributeAND(){
+        int i,j;
+        if(formulaDNF.equals(""))
+            formulaDNF = formulaNNF;
+        for (i = -1; (i = formulaDNF.indexOf(")&", i + 1)) != -1; i++) {
+            int indexOfEndOfParen = i;
+            char candidateToNextSymbol = formulaDNF.charAt(indexOfEndOfParen + 2);
+            if(candidateToNextSymbol != '('){
+                String candidateToNextSymbolStr = String.valueOf(candidateToNextSymbol);
+                if(candidateToNextSymbol == '!')
+                {
+                    indexOfEndOfParen++;
+                    candidateToNextSymbolStr = "!".concat(String.valueOf(formulaDNF.charAt(indexOfEndOfParen + 2)));
+                }
+                String equivalentExpression = "";
+                int indexOfStartInnerClause = getIndexOfStartInnerClause(indexOfEndOfParen - 1, formulaDNF);
+                for(j = indexOfStartInnerClause + 1; j < indexOfEndOfParen; j++){
+                    char nextSymbol = formulaDNF.charAt(j);
+                    if(Character.isLetter(nextSymbol)){
+                        equivalentExpression = equivalentExpression.concat("(" + candidateToNextSymbolStr + "&"
+                            + String.valueOf(nextSymbol) + ")");
+                    }else if(nextSymbol == '!'){
+                        j++;
+                        equivalentExpression = equivalentExpression.concat("(" + candidateToNextSymbolStr + "&"
+                            + "!" + String.valueOf(formulaDNF.charAt(j)) + ")");
+                    }else if(nextSymbol == '|' || nextSymbol == '&'){
+                        equivalentExpression = equivalentExpression.concat(String.valueOf(nextSymbol));
+                    }else if(nextSymbol == '('){
+                        int indexOfEndInnerInnerClause = getIndexOfEndInnerClause(j + 1, formulaDNF);
+                        equivalentExpression = equivalentExpression.concat(formulaDNF.substring(j, indexOfEndInnerInnerClause + 1));
+                        equivalentExpression = equivalentExpression.concat("&" + candidateToNextSymbolStr);
+                        j = indexOfEndInnerInnerClause;
+                    }
+                }
+                String stringToReplace = formulaDNF.substring(indexOfStartInnerClause, indexOfEndOfParen + 3);
+                formulaDNF = formulaDNF.replace(stringToReplace, equivalentExpression);
             }
         }
-        // if(formulaCNF.equals(""))
-        //     distributeOR();
-        // formulaCNF;
+        //Will move letter to right of parentheses and iterate distributeAND
+        for (i = -1; (i = formulaDNF.indexOf("&(", i + 1)) != -1; i++) {
+            int indexOfStartOfP = i - 1;
+            char previousSymbol = formulaDNF.charAt(i - 1);
+            if(Character.isLetter(previousSymbol)){
+                String equivalentExpression = "";
+                //find end of innerclause
+                int indexOfEndInnerClause = getIndexOfEndInnerClause(i + 2, formulaDNF);
+                equivalentExpression = equivalentExpression.concat(formulaDNF.substring(i + 1, indexOfEndInnerClause + 1));
+                equivalentExpression = equivalentExpression.concat("&");
+                if(i > 1 && formulaDNF.charAt(i - 2) == '!'){
+                    indexOfStartOfP--;
+                    equivalentExpression = equivalentExpression.concat("!");
+                }
+                equivalentExpression = equivalentExpression.concat(String.valueOf(previousSymbol));
+
+                String stringToReplace = formulaDNF.substring(indexOfStartOfP, indexOfEndInnerClause + 1);
+                formulaDNF = formulaDNF.replace(stringToReplace, equivalentExpression);
+            }
+        }
+        for (i = -1; (i = formulaDNF.indexOf(")&", i + 1)) != -1; i++) {
+            if(Character.isLetter(formulaDNF.charAt(i + 2)))
+                distributeAND();
+        }
+    }
+    private static void transformToCNF(){
+        mprintln("Transforming " + formula + " to CNF");
+        //Following algorithm from wikipedia https://en.wikipedia.org/wiki/Conjunctive_normal_form
+        if(formulaNNF.equals(""))
+            transformToNNF();
+        if(formulaCNF.equals(""))
+            distributeOR();
+        formulaCNF = cleanFormula(formulaCNF);
+        mprintln(formulaCNF);
     }
     private static void distributeOR(){
         int i, j;
@@ -185,7 +288,6 @@ public class Solution{
                 }
                 String equivalentExpression = "";
                 int indexOfStartInnerClause = getIndexOfStartInnerClause(indexOfEndOfParen - 2, formulaCNF);
-                mprintln("index of start: " + indexOfStartInnerClause + " - formula: " + formulaCNF);
                 for(j = indexOfStartInnerClause + 1; j < indexOfEndOfParen; j++){
                     char nextSymbol = formulaCNF.charAt(j);
                     if(Character.isLetter(nextSymbol)){
@@ -211,14 +313,43 @@ public class Solution{
             if(Character.isLetter(formulaCNF.charAt(i + 2)))
                 distributeOR();
         }
-        
     }
     /*
     *   Remove double parentheses
     */
     private static String cleanFormula(String formulaToClean){
-        formulaToClean = formulaToClean.replace("((", "(");
-        formulaToClean = formulaToClean.replace("))", ")");
+        while(formulaToClean.contains("((")){
+            mprintln("Cleaning: " + formulaToClean);
+            int indexOfStartInnerClause = formulaToClean.indexOf("((");
+            int indexOfEndInnerClause = getIndexOfEndInnerClause(indexOfStartInnerClause + 1, formulaToClean);
+            if(indexOfEndInnerClause == -1)
+            {
+                mprintln("Error---------------------Parentheses does not match: ----" + formulaToClean);
+                break;
+            }
+            String substringToClean = formulaToClean.substring(indexOfStartInnerClause, indexOfEndInnerClause + 1);
+            if(substringToClean.contains("|") && !substringToClean.contains("&") ||
+                substringToClean.contains("&") && !substringToClean.contains("|")){
+                    formulaToClean = formulaToClean.replace(substringToClean,
+                        substringToClean.replace("((","("));
+                    formulaToClean = formulaToClean.replace(substringToClean,
+                        substringToClean.replace("))",")"));
+                    mprintln(formulaToClean);
+                }
+            else
+                break;
+        }
+        //add spaces between letters and operators
+        String formulaSpaces = "";
+        for(int i = 0; i < formulaToClean.length(); i++){
+            char symbol = formulaToClean.charAt(i);
+            if(symbol == '&' || symbol == '|')
+                formulaSpaces = formulaSpaces.concat(" ");
+            formulaSpaces = formulaSpaces.concat(String.valueOf(symbol));
+            if(symbol == '&' || symbol == '|')
+                formulaSpaces = formulaSpaces.concat(" ");
+        }
+        formulaToClean = formulaSpaces;
         return formulaToClean;
     }
     private static void transformToNNF(){
@@ -239,7 +370,7 @@ public class Solution{
             char nextSymbol;
             //get clause affected by negation
             indexOfEndNegationParen = getIndexOfEndInnerClause(indexOfEndNegationParen, formulaNNF);
-            String equivalentExpression = "(";
+            String equivalentExpression = "";
             //apply negations
             for(int i = indexOfStartNegationParen + 2; i < indexOfEndNegationParen; i++){
                 nextSymbol = formulaNNF.charAt(i);
@@ -255,9 +386,16 @@ public class Solution{
                     if(Character.isLetter(nextSymbol))
                         equivalentExpression = equivalentExpression.concat(String.valueOf(nextSymbol));
                     else if(nextSymbol == '('){
-                        int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i, formulaNNF);
+                        int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i + 1, formulaNNF);
+                        equivalentExpression = equivalentExpression.concat("!");
                         equivalentExpression = equivalentExpression.concat(formulaNNF.substring(i - 1, indexOfEndInnerNegatedClause));
+                        i = indexOfEndInnerNegatedClause;
                     }
+                }else if(nextSymbol == '('){
+                    int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i + 1, formulaNNF);
+                    equivalentExpression = equivalentExpression.concat("!");
+                    equivalentExpression = equivalentExpression.concat(formulaNNF.substring(i, indexOfEndInnerNegatedClause + 1));
+                    i = indexOfEndInnerNegatedClause;
                 }
             }
             equivalentExpression = equivalentExpression.concat(")");
@@ -270,6 +408,8 @@ public class Solution{
         int numberOfParentheses = 1;
         char nextSymbol;
         while(numberOfParentheses > 0){
+            if(index >= formula.length())
+                return -1;
             nextSymbol = formula.charAt(index);
             if(nextSymbol == '(')
                 numberOfParentheses--;
@@ -284,6 +424,8 @@ public class Solution{
         int numberOfParentheses = 1;
         char nextSymbol;
         while(numberOfParentheses > 0){
+            if(index >= formula.length())
+                return -1;
             nextSymbol = formula.charAt(index);
             if(nextSymbol == ')')
                 numberOfParentheses--;
@@ -362,5 +504,4 @@ public class Solution{
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         return br.readLine();
     }
-
 }
