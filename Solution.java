@@ -18,6 +18,7 @@ public class Solution{
     private static String formulaDNF = "";
     private static String formulaFullDNF = "";
     private static String formulaNNF = "";
+    private static String formulaEvaluated = "";
 
     private static ArrayList<String> fomulaTestCase = new ArrayList<String>();
     private static void generalMenu(){
@@ -69,7 +70,7 @@ public class Solution{
         readValue();
         callMe();
     }
-    private static void executeAction(String action){
+    private static void executeAction(String action) throws IOException{
         switch(action){
             case "1":
                 mprintln("Transforming " + formula + " to CNF:");
@@ -97,6 +98,13 @@ public class Solution{
                 mprintln("DNF formula: " + formulaDNF);
                 mprintln("Full DNF formula: " + formulaFullDNF);
                 break;
+            case "5":
+                mprintln("Evaluating formula: " + formula);
+                evaluateFormula();
+                mprintln("NNF formula: " + formulaNNF);
+                mprintln("CNF formula: " + formulaCNF);
+                mprintln("After evaluation: " + formulaEvaluated);
+                break;
             case "7":
                 clearFormulas();
                 break;
@@ -106,7 +114,7 @@ public class Solution{
         }
     }
     private static void clearFormulas(){
-        formula = formulaNNF = formulaCNF = formulaDNF = formulaFullDNF = formulaFullCNF = "";
+        formula = formulaNNF = formulaCNF = formulaDNF = formulaFullDNF = formulaFullCNF = formulaEvaluated = "";
     }
     private static void transformToNNF(){
         formulaNNF = formula;
@@ -163,10 +171,76 @@ public class Solution{
         formulaFullDNF = formulaFullDNF.substring(0, formulaFullDNF.length() - 1); //Remove extra operator
         formulaFullDNF = addSpaces(formulaFullDNF);
     }
+    private static void evaluateFormula() throws IOException{
+        if(formulaCNF.equals(""))
+            transformToCNF();
+        if(formulaEvaluated.equals(""))
+            formulaEvaluated = removeSpaces(formulaCNF);
+        requestValues(); //Get atoms and request user to enter 0 or 1 per atom, replace values on formula
+        applyNegationToAtoms(); //!0 with 1, and !1 with 0
+        //Replace 0|1 with 1, 0&1 with 0,
+        applyOrToParentheses();
+        applyGeneralFormula();
+        formulaEvaluated = addSpaces(formulaEvaluated);
+    }
+    private static void applyGeneralFormula(){
+        if(formulaEvaluated.contains("0"))
+            formulaEvaluated = "0";
+        else if(formulaEvaluated.contains("1")){
+            formulaEvaluated = formulaEvaluated.replaceAll("1\\|", "");
+            formulaEvaluated = formulaEvaluated.replaceAll("\\|1", "");
+        }
+        if(formulaEvaluated.isEmpty())
+            formulaEvaluated = "1";
+    }
+    private static void applyOrToParentheses(){
+        StringBuilder mStrBldr = new StringBuilder(formulaEvaluated);
+        int i;
+        //Iterate all parentheses
+        for(i = -1; (i = mStrBldr.indexOf("(", i + 1)) != -1; i++) {
+            int indexOfEndOfParen = getIndexOfEndInnerClause(i + 1, mStrBldr.toString());
+            String mClause = mStrBldr.substring(i + 1, indexOfEndOfParen);
+            mprintln(mClause);
+            if(mClause.contains("1"))
+                mClause = "1";
+            else{
+                if(getAtoms(mClause, false).isEmpty())
+                    mClause = "0";
+                else{
+                    mClause = mClause.replaceAll("0\\|", "");
+                    mClause = mClause.replaceAll("\\|0", "");
+                }
+            }
+            mStrBldr.replace(i + 1, indexOfEndOfParen, mClause);
+        }
+        formulaEvaluated = mStrBldr.toString();
+    }
+    /**
+     * Replace !0 with 1 and !1 with 0
+     */
+    private static void applyNegationToAtoms(){
+        formulaEvaluated = formulaEvaluated.replaceAll("!0", "1").replaceAll("!1", "0");
+    }
+    /**
+     * Get atoms and request user to enter 0 or 1 per atom, replace values on formula
+     */
+    private static void requestValues() throws IOException{
+        mprintln("Please give a 0 for false, 1 for true, or just enter to no value to the following atoms.");
+        Set<String> mAtoms = getAtoms(formulaEvaluated, false);
+        for(String mAtom : mAtoms){
+            mprintln("Enter value for atom: " + mAtom);
+            String mValue = readValue();
+            if(mValue.equals("0") || mValue.equals("1"))
+                formulaEvaluated = formulaEvaluated.replaceAll(mAtom, mValue);
+        }
+    }
+    private static String removeSpaces(String formula){
+        return formula.replaceAll("\\s+","");
+    }
     private static String completeClauses(String operator, String formula){
         int i, index = 0;
         String negOperator = operator.equals("&") ? "|" : "&";
-        formula = formula.replaceAll("\\s+","");
+        formula = removeSpaces(formula);
         //Algorithm:
         //Find different atoms
         //Iterate for every parentheses that contains atoms, add every missing atom and its negation
@@ -638,7 +712,7 @@ public class Solution{
         }
     }
 
-    private static void callTestCases(String action){
+    private static void callTestCases(String action) throws IOException{
         if(fomulaTestCase.isEmpty())
         {
             fomulaTestCase.add("a");
