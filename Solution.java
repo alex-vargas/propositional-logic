@@ -19,6 +19,7 @@ public class Solution{
     private static String formulaFullDNF = "";
     private static String formulaNNF = "";
     private static String formulaEvaluated = "";
+    private static String satResult = "";
 
     private static ArrayList<String> fomulaTestCase = new ArrayList<String>();
     private static void generalMenu(){
@@ -105,6 +106,13 @@ public class Solution{
                 mprintln("CNF formula: " + formulaCNF);
                 mprintln("After evaluation: " + formulaEvaluated);
                 break;
+            case "6":
+                mprintln("Evaluating if formula: " + formula + " is satisfiable, tautology or contradiction");
+                satEvaluate();
+                mprintln("NNF formula: " + formulaNNF);
+                mprintln("CNF formula: " + formulaCNF);
+                mprintln("Formula is " + satResult);
+                break;
             case "7":
                 clearFormulas();
                 break;
@@ -177,30 +185,69 @@ public class Solution{
         if(formulaEvaluated.equals(""))
             formulaEvaluated = removeSpaces(formulaCNF);
         requestValues(); //Get atoms and request user to enter 0 or 1 per atom, replace values on formula
-        applyNegationToAtoms(); //!0 with 1, and !1 with 0
-        //Replace 0|1 with 1, 0&1 with 0,
-        applyOrToParentheses();
-        applyGeneralFormula();
+        formulaEvaluated = getValueOfGivenFormula(formulaEvaluated);
         formulaEvaluated = addSpaces(formulaEvaluated);
     }
-    private static void applyGeneralFormula(){
-        if(formulaEvaluated.contains("0"))
-            formulaEvaluated = "0";
-        else if(formulaEvaluated.contains("1")){
-            formulaEvaluated = formulaEvaluated.replaceAll("1\\|", "");
-            formulaEvaluated = formulaEvaluated.replaceAll("\\|1", "");
-        }
-        if(formulaEvaluated.isEmpty())
-            formulaEvaluated = "1";
+    private static void satEvaluate(){
+        if(formulaCNF.equals(""))
+            transformToCNF();
+        satResult = "not evaluated";
+        //Get atoms of formula
+        //initialize atoms at 0
+        //call special function
+        Set<String> mAtoms = getAtoms(formulaCNF, false);
+        LinkedHashMap<String, String> mAtomsLHM = new LinkedHashMap<String, String>();
+
+        for(String mAtom : mAtoms)
+            mAtomsLHM.put(mAtom, "0");
+        executeTruthValues(mAtomsLHM);
     }
-    private static void applyOrToParentheses(){
-        StringBuilder mStrBldr = new StringBuilder(formulaEvaluated);
+    private static void executeTruthValues(LinkedHashMap<String, String> mAtomsLHM){
+        String satFormula = formulaCNF;
+        for(String mAtom : mAtomsLHM.keySet())
+            satFormula = satFormula.replaceAll(mAtom, mAtomsLHM.get(mAtom));
+        String mResult = getValueOfGivenFormula(satFormula);
+        satResult = satResult.concat(mResult);
+        if(!mAtomsLHM.containsValue("0")){
+            mprintln(satResult);
+            if(satResult.contains("1")){
+                if(satResult.contains("0"))
+                    satResult = "satisfiable";
+                else
+                    satResult = "tautology";
+            }else
+                satResult = "contradiction";
+            return;
+        }
+
+        for(String mAtom : mAtomsLHM.keySet()){
+            if(mAtomsLHM.get(mAtom).equals("0")){
+                mAtomsLHM.put(mAtom, "1");
+                break;
+            }else{
+                mAtomsLHM.put(mAtom, "0");
+            }
+        }
+        executeTruthValues(mAtomsLHM);
+    }
+    private static String applyGeneralFormula(String mFormula){
+        if(mFormula.contains("0"))
+            mFormula = "0";
+        else if(mFormula.contains("1")){
+            mFormula = mFormula.replaceAll("\\(1\\)\\&", "");
+            mFormula = mFormula.replaceAll("\\&\\(1\\)", "");
+        }
+        if(mFormula.isEmpty())
+            mFormula = "1";
+        return mFormula;
+    }
+    private static String applyOrToParentheses(String mFormula){
+        StringBuilder mStrBldr = new StringBuilder(mFormula);
         int i;
         //Iterate all parentheses
         for(i = -1; (i = mStrBldr.indexOf("(", i + 1)) != -1; i++) {
             int indexOfEndOfParen = getIndexOfEndInnerClause(i + 1, mStrBldr.toString());
             String mClause = mStrBldr.substring(i + 1, indexOfEndOfParen);
-            mprintln(mClause);
             if(mClause.contains("1"))
                 mClause = "1";
             else{
@@ -213,13 +260,26 @@ public class Solution{
             }
             mStrBldr.replace(i + 1, indexOfEndOfParen, mClause);
         }
-        formulaEvaluated = mStrBldr.toString();
+        return mStrBldr.toString();
     }
     /**
      * Replace !0 with 1 and !1 with 0
      */
-    private static void applyNegationToAtoms(){
-        formulaEvaluated = formulaEvaluated.replaceAll("!0", "1").replaceAll("!1", "0");
+    private static String applyNegationToAtoms(String formula){
+        return formula.replaceAll("!0", "1").replaceAll("!1", "0");
+    }
+    /**
+     * Evaluate formula that has values, forula has to be cnf
+     * @param  mFormula [description]
+     * @return          [description]
+     */
+    private static String getValueOfGivenFormula(String mFormula){
+        mFormula = applyNegationToAtoms(mFormula); //!0 with 1, and !1 with 0
+        //Replace 0|1 with 1, 
+        mFormula = applyOrToParentheses(mFormula);
+        //0&1 with 0,
+        mFormula = applyGeneralFormula(mFormula);
+        return mFormula;
     }
     /**
      * Get atoms and request user to enter 0 or 1 per atom, replace values on formula
@@ -791,6 +851,12 @@ public class Solution{
             ms = "(a&(b|!b))";
             fomulaTestCase.add(ms);
             ms = "(a|b)&(c|d)";
+            fomulaTestCase.add(ms);
+            ms = "(!a|b)|(!b|a)";
+            fomulaTestCase.add(ms);
+            ms = "(!a&a)";
+            fomulaTestCase.add(ms);
+            ms = "(a->b)|(b->a)";
             fomulaTestCase.add(ms);
         }
         for(int i = 0; i < fomulaTestCase.size();i++){
