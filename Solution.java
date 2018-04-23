@@ -61,6 +61,7 @@ public class Solution{
             //If formula has been entered, show options
             printMenu();
             String action = readValue();
+            //change to true to execute test cases
             if(true){
                 //Call test cases
                 callTestCases(action);
@@ -180,6 +181,7 @@ public class Solution{
         formulaFullDNF = addSpaces(formulaFullDNF);
     }
     private static void evaluateFormula() throws IOException{
+        formulaEvaluated = "";
         if(formulaCNF.equals(""))
             transformToCNF();
         if(formulaEvaluated.equals(""))
@@ -209,7 +211,6 @@ public class Solution{
         String mResult = getValueOfGivenFormula(satFormula);
         satResult = satResult.concat(mResult);
         if(!mAtomsLHM.containsValue("0")){
-            mprintln(satResult);
             if(satResult.contains("1")){
                 if(satResult.contains("0"))
                     satResult = "satisfiable";
@@ -285,7 +286,7 @@ public class Solution{
      * Get atoms and request user to enter 0 or 1 per atom, replace values on formula
      */
     private static void requestValues() throws IOException{
-        mprintln("Please give a 0 for false, 1 for true, or just enter to no value to the following atoms.");
+        mprintln("Please give a 0 for false, 1 for true, or just 'enter' to not specify a value to the following atoms.");
         Set<String> mAtoms = getAtoms(formulaEvaluated, false);
         for(String mAtom : mAtoms){
             mprintln("Enter value for atom: " + mAtom);
@@ -367,17 +368,20 @@ public class Solution{
     private static String removeAtomsDuplicateOnClause(String formula, String operator, String negOperator){
         Set<String> mAtoms = getAtoms(formula, true);
         Set<String> mAtoms2 = getAtoms(formula, true);
+        // (HashSet)newset.clone();
         String equivalentExpression = "";
         StringBuilder mStrBldr = new StringBuilder("");
 
         for(String mAtom : mAtoms2){
             if(mAtom.contains("!") && mAtoms.contains(mAtom.replace("!",""))){
+                mAtoms2.clear();
+                mAtoms.clear();
                 if(negOperator.equals("|")){
-                    mAtoms.remove(mAtom.replace("!",""));
-                    mAtoms.remove(mAtom);
+                    mAtoms.add("1");
                 }else{
-                    return "";
+                    mAtoms.add("0");
                 }
+                break;
             }
         }
         mStrBldr.append("(");
@@ -414,6 +418,102 @@ public class Solution{
         }
         return true;
     }
+    /**
+     * Distribute symbols inside inner clauses, remove double parentheses
+     * @param  operator    Operator that indicates type of formula being created
+     * @param  negOperator Operator to be distributed
+     * @param  formula     Formula to be transformed
+     * @return String Formula after being distributed
+     */
+    private static String distributeSymbols(String operator, String negOperator, String formula){
+        //if formula contains (( or ))
+            //if clause contains | xor &
+                //remove all inner parentheses
+            //if index of parentheses is 0
+                //get symbol after inner opening parentheses
+            //else
+                //get symbol before inner opening parentheses
+            //if index of parentheses is 0
+                //get symbol after general opening parentheses
+            //else
+                //get symbol before general opening parentheses
+            //if symbol inner parentheses is not equal to general symbol
+                //distribute symbol inner opening parentheses
+            //remove general parentheses
+        //distribute negoperator
+        int i, index = 0;
+        if(formula.startsWith("(") 
+            && getIndexOfEndInnerClause(1, formula) == formula.length() - 1)
+            formula = formula.substring(1, formula.length() - 1);
+        mprintln("______________________________Start of new function______" + formula);
+        for(i = -1; (i = formula.indexOf("((", i + 1)) != -1; i++) {
+            int indexOfEndOfParen = getIndexOfEndInnerClause(i + 1, formula);
+            int indexOfEndInnerClause = getIndexOfEndInnerClause(i + 2, formula);
+            String mClause = formula.substring(i + 1, indexOfEndOfParen);
+            mprintln("First check, if clause does not contain both symbols, clause: " + mClause);
+            //Remove inner parentheses if clause contains same symbols
+            if(mClause.contains("|")^mClause.contains("&"))
+                mClause = mClause.replaceAll("[()]", "");
+            // mprintln("If indexOfEndOfParen is length, continue: " + indexOfEndOfParen + " - " + (formula.length() - 1));
+            // if(indexOfEndOfParen == (formula.length() - 1))
+            //     continue;
+            mprintln("After removal: " + mClause);
+            mprintln("Searching for symbols in: " + (indexOfEndInnerClause + 1) + " - " + (indexOfEndInnerClause + 2));
+            String symbolInnerParen = formula.substring(indexOfEndInnerClause + 1, indexOfEndInnerClause + 2);
+            mprintln("Symbol is: " + symbolInnerParen);
+            //if theres no symbol to the right of formula check if there's one to the left
+            //if not cotinue
+            String symbolGeneralParen = "";
+            mprintln("Searching for symbols in: " + (indexOfEndOfParen + 1) + " - " + (indexOfEndOfParen + 2));
+            mprintln("indexOfEndOfParen= " + indexOfEndOfParen + " , formula length=  " +  formula.length());
+            if(indexOfEndOfParen != (formula.length() - 1))
+                symbolGeneralParen = formula.substring(indexOfEndOfParen + 1, indexOfEndOfParen + 2);
+            else if(i > 0)
+                symbolGeneralParen = formula.substring(indexOfEndOfParen + 1, indexOfEndOfParen + 2);
+            else
+                continue;
+            mprintln("check if symbol inside clause '" + symbolInnerParen + "' is equal to: '" 
+                + symbolGeneralParen + "' and distribute.");
+            if(!symbolInnerParen.equals(symbolGeneralParen))
+                mClause = distribute(symbolGeneralParen, symbolInnerParen, mClause);
+            mprintln("after distributing: " + mClause);
+            mprintln("going to replace clause: " + mClause + " inside formula: " + formula);
+            if(i != 0)
+                formula = formula.substring(0, i) + mClause
+                    + formula.substring(indexOfEndOfParen + 1, formula.length());
+            else
+                formula = mClause + formula.substring(indexOfEndOfParen + 1, formula.length());
+            mprintln("after replacing: " + formula);
+        }
+        mprintln("entrara..." + formula + "  -  " + formula.indexOf("))"));
+        for(i = -1; (i = formula.indexOf("))", i + 1)) != -1; i++) {
+            mprintln("si entro");
+            int indexOfStartOfP = getIndexOfStartInnerClause(i - 1, formula);
+            index = indexOfStartOfP - 2;
+            String mAtomToDistribute = formula.substring(indexOfStartOfP - 2, indexOfStartOfP);
+            mAtomToDistribute = new StringBuilder(mAtomToDistribute).reverse().toString();
+            if(formula.charAt(indexOfStartOfP - 3) == '!'){
+                mAtomToDistribute = String.valueOf(mAtomToDistribute.charAt(0)) + "!"
+                    + String.valueOf(mAtomToDistribute.charAt(1));
+                index--;
+            }
+            mprintln("Before moving atom to distribute " + formula);
+            formula = formula.substring(0, index) 
+                + formula.substring(indexOfStartOfP, i + 1)
+                + mAtomToDistribute
+                + formula.substring(i + 1, formula.length());
+            mprintln("After moving atom: " + formula);
+            formula = distributeSymbols(operator, negOperator, formula);
+            mprintln("finish recursion: " + formula);
+        }
+        //going to distribute negoperator
+        mprintln("End of iterators, last action: ");
+        // mprintln("Going to distribute negOperator '" + negOperator + "' formula is: " + formula);
+        // formula = distribute(operator, negOperator, formula);
+        // mprintln("After distributing negOperator: " + formula);
+        mprintln("______________________________End of new function______" + formula);
+        return formula;
+    }
    /** 
     * Iterate inner clause and distribute negOperator
     * @param operator Operator that indicates type of formula being created
@@ -422,47 +522,51 @@ public class Solution{
     * @return String Formula after being distributed
     */
     private static String iterateInnerSymbols(String operator, String negOperator, String formula){
-        StringBuilder mStrBldr = new StringBuilder(formula);
-        int indexOfStartOfP = mStrBldr.indexOf("(");
-        if(indexOfStartOfP == -1)
-            return mStrBldr.toString();
-        int indexOfEndOfParen = getIndexOfEndInnerClause(indexOfStartOfP + 1, mStrBldr.toString());
-        StringBuilder mClause = new StringBuilder(mStrBldr.substring(indexOfStartOfP + 1, indexOfEndOfParen));
-        //If clause contains parentheses
-        if(mClause.toString().contains("(")){
-            int indexOfStartInnerInnerClause = mClause.indexOf("(");
-            int indexOfEndInnerInnerClause = getIndexOfEndInnerClause(indexOfStartInnerInnerClause + 1, mClause.toString());
-            StringBuilder mInnerClause = new StringBuilder(mClause.substring(indexOfStartInnerInnerClause + 1,
-                                                                                indexOfEndInnerInnerClause));
-            //If clause contains just one symbol, not two we just remove parentheses
-            if((mClause.toString().contains(operator) && !mClause.toString().contains(negOperator)) ||
-            (mClause.toString().contains(negOperator) && !mClause.toString().contains(operator)))
-                mClause.replace(0, mClause.length(),
-                    mClause.toString().replaceAll("[()]", ""));
-            else{
-                //Iterate innerinner clause
-                mClause.replace(indexOfStartInnerInnerClause + 1, indexOfEndInnerInnerClause,
-                    iterateInnerSymbols(operator, negOperator, mInnerClause.toString()));
-            }
-        }
-        if(mClause.indexOf("(") > 0)
-            mClause = new StringBuilder(distribute(mClause.charAt(mClause.indexOf("(") - 1) == '|' ? "&" : "|",
-                mClause.substring(mClause.indexOf("(") - 1, mClause.indexOf("(")), mClause.toString()));
-        if(!mStrBldr.substring(indexOfStartOfP + 1, indexOfEndOfParen).equals(mClause.toString())){
-            mStrBldr.replace(indexOfStartOfP + 1, indexOfEndOfParen, mClause.toString());
-            if(indexOfStartOfP > 0)
-                mStrBldr = new StringBuilder(distribute(mStrBldr.charAt(indexOfStartOfP - 1) == '|' ? "&" : "|",
-                    mStrBldr.substring(indexOfStartOfP - 1, indexOfStartOfP), mStrBldr.toString()));
-            mStrBldr = new StringBuilder(iterateInnerSymbols(operator, negOperator, mStrBldr.toString()));
-        }else if(indexOfEndOfParen != (mStrBldr.length() - 1))
-            mStrBldr.replace(indexOfEndOfParen + 2, mStrBldr.length(),
-                iterateInnerSymbols(operator, negOperator, mStrBldr.substring(indexOfEndOfParen + 2)));
-        //Check if formula needs another iteration
-        formula = mStrBldr.toString();
-        formula = removeParenthesesClause(formula, operator, negOperator);
-        if(formula.indexOf(")" + negOperator + "(") != -1)
-            formula = distribute(operator, negOperator, formula);
-        return formula;
+        return distribute(operator, negOperator, distributeSymbols(operator, negOperator, formula));
+        //The following code is deprecated Apr. 22 2018
+        // StringBuilder mStrBldr = new StringBuilder(formula);
+        // int indexOfStartOfP = mStrBldr.indexOf("(");
+        // if(indexOfStartOfP == -1)
+        //     return mStrBldr.toString();
+        // int indexOfEndOfParen = getIndexOfEndInnerClause(indexOfStartOfP + 1, mStrBldr.toString());
+        // StringBuilder mClause = new StringBuilder(mStrBldr.substring(indexOfStartOfP + 1, indexOfEndOfParen));
+        // //If clause contains parentheses
+        // if(mClause.toString().contains("(")){
+        //     int indexOfStartInnerInnerClause = mClause.indexOf("(");
+        //     int indexOfEndInnerInnerClause = getIndexOfEndInnerClause(indexOfStartInnerInnerClause + 1, mClause.toString());
+        //     StringBuilder mInnerClause = new StringBuilder(mClause.substring(indexOfStartInnerInnerClause + 1,
+        //                                                                         indexOfEndInnerInnerClause));
+        //     //If clause contains just one symbol, not two, we just remove parentheses
+        //     if((mClause.toString().contains(operator) && !mClause.toString().contains(negOperator)) ||
+        //     (mClause.toString().contains(negOperator) && !mClause.toString().contains(operator)))
+        //         mClause.replace(0, mClause.length(),
+        //             mClause.toString().replaceAll("[()]", ""));
+        //     else{
+        //         //Iterate innerinner clause
+        //         mClause.replace(indexOfStartInnerInnerClause + 1, indexOfEndInnerInnerClause,
+        //             iterateInnerSymbols(operator, negOperator, mInnerClause.toString()));
+        //         mClause = new StringBuilder(distribute(negOperator, operator, mClause.toString()));
+        //     }
+        // }
+        // if(mClause.indexOf("(") > 0)
+        //     mClause = new StringBuilder(distribute(mClause.charAt(mClause.indexOf("(") - 1) == '|' ? "&" : "|",
+        //         mClause.substring(mClause.indexOf("(") - 1, mClause.indexOf("(")), mClause.toString()));
+        // if(!mStrBldr.substring(indexOfStartOfP + 1, indexOfEndOfParen).equals(mClause.toString())){
+        //     mStrBldr.replace(indexOfStartOfP + 1, indexOfEndOfParen, mClause.toString());
+        //     if(indexOfStartOfP > 0)
+        //         mStrBldr = new StringBuilder(distribute(mStrBldr.charAt(indexOfStartOfP - 1) == '|' ? "&" : "|",
+        //             mStrBldr.substring(indexOfStartOfP - 1, indexOfStartOfP), mStrBldr.toString()));
+        //     mStrBldr = new StringBuilder(iterateInnerSymbols(operator, negOperator, mStrBldr.toString()));
+        // }else if(indexOfEndOfParen != (mStrBldr.length() - 1))
+        //     mStrBldr.replace(indexOfEndOfParen + 2, mStrBldr.length(),
+        //         iterateInnerSymbols(operator, negOperator, mStrBldr.substring(indexOfEndOfParen + 2)));
+        // //Check if formula needs another iteration
+        
+        // formula = mStrBldr.toString();
+        // formula = removeParenthesesClause(formula, operator, negOperator);
+        // if(formula.indexOf(")" + negOperator + "(") != -1)
+        //     formula = distribute(operator, negOperator, formula);
+        // return formula;
     }
     /**
      * Gernerate permutations given a list of list of atoms
@@ -487,6 +591,23 @@ public class Solution{
     *
     **/
     private static String distribute(String operator, String negOperator, String formula){
+        if(formula.startsWith("(") 
+            && getIndexOfEndInnerClause(1, formula) == formula.length() - 1)
+            formula = formula.substring(1, formula.length() - 1);
+        mprintln("Init of distribute, operator: " + operator + " , negOperator: " + negOperator
+            + " , formula: " + formula);
+        //Only distribute negoperator
+        if(formula.contains("(")){
+            int indexOfStartOfP = formula.indexOf("(");
+            int indexOfEndOfParen = getIndexOfEndInnerClause(indexOfStartOfP + 1, formula);
+
+            if((indexOfStartOfP != 0 && indexOfEndOfParen != formula.length() - 1
+                && String.valueOf(formula.charAt(indexOfStartOfP - 1)).equals(operator))
+                || (indexOfStartOfP == 0
+                    && String.valueOf(formula.charAt(indexOfEndOfParen + 1)).equals(operator)))
+                return formula;
+        }else
+            return formula;
 
         StringBuilder mFormulaBldr = new StringBuilder(formula);
         int i, j, index = 0;
@@ -507,6 +628,7 @@ public class Solution{
                 i = indexOfEndOfParen;
             }
         }
+        mprintln("clauses obtained: " + mClauses);
         List<List<String>> mListOfAtomsPerClause = new ArrayList<List<String>>();
         for(String mClause : mClauses){
             List<String> mAtoms = new ArrayList<String>();
@@ -529,6 +651,7 @@ public class Solution{
                 mFormulaBldr.append(operator);
             mFormulaBldr.append(permu);
         }
+        mprintln("end of distribute: " + mFormulaBldr.toString());
         return mFormulaBldr.toString();
     }
     /**
@@ -775,88 +898,115 @@ public class Solution{
     private static void callTestCases(String action) throws IOException{
         if(fomulaTestCase.isEmpty())
         {
-            fomulaTestCase.add("a");
-            fomulaTestCase.add("a->b");
-            fomulaTestCase.add("a->!b");
-            fomulaTestCase.add("a->!!b");
-            fomulaTestCase.add("!a");
-            fomulaTestCase.add("!a->b");
-            fomulaTestCase.add("!a->!b");
-            fomulaTestCase.add("!a->!!b");
-            fomulaTestCase.add("a->(b&c)");
-            fomulaTestCase.add("a->!(b&c)");
-            fomulaTestCase.add("a->!!(b&c)");
-            fomulaTestCase.add("a->!(!b&!c)");
-            fomulaTestCase.add("!a->(b&c)");
-            fomulaTestCase.add("!a->!(b&c)");
-            fomulaTestCase.add("!a->!!(b&c)");
-            fomulaTestCase.add("!a->!(!b&!c)");
-            fomulaTestCase.add("a->!c");
-            String ms = "(a&b)->c";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)->!c";
-            fomulaTestCase.add(ms);
-            ms = "(a->b)&(a->c)";
-            fomulaTestCase.add(ms);
-            ms = "a|(b&c)";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|c)";
-            fomulaTestCase.add(ms);
-            ms = "a|(b&(c&D))";
-            fomulaTestCase.add(ms);
-            ms = "(a|b)&(a|(c&d))";
-            fomulaTestCase.add(ms);
-            ms = "a&(b&c)";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|c)";
-            fomulaTestCase.add(ms);
-            ms = "(b&c)&a";
-            fomulaTestCase.add(ms);
-            ms = "(b|c)&a";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|(c|d))";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)|(a&(c|d))";
-            fomulaTestCase.add(ms);
-            ms = "!!a&(b|c)";
-            fomulaTestCase.add(ms);
-            ms = "!(!a|!b|!c)";
-            fomulaTestCase.add(ms);
-            ms = "!((a&b)->c)";
-            fomulaTestCase.add(ms);
-            ms = "!((a&b)->!c)";
-            fomulaTestCase.add(ms);
-            ms = "!(a)";
-            fomulaTestCase.add(ms);
-            ms = "(a&b&(c|d))";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|(c|b))";
-            fomulaTestCase.add(ms);
-            ms = "a&b";
-            fomulaTestCase.add(ms);
-            ms = "a|b";
-            fomulaTestCase.add(ms);
-            // ms = "(a&(b|(c|(a&d))))|(a&b)";
+            String ms = "";
+            // fomulaTestCase.add("a");
+            // fomulaTestCase.add("a->b");
+            // fomulaTestCase.add("a->!b");
+            // fomulaTestCase.add("a->!!b");
+            // fomulaTestCase.add("!a");
+            // fomulaTestCase.add("!a->b");
+            // fomulaTestCase.add("!a->!b");
+            // fomulaTestCase.add("!a->!!b");
+            // fomulaTestCase.add("a->(b&c)");
+            // fomulaTestCase.add("a->!(b&c)");
+            // fomulaTestCase.add("a->!!(b&c)");
+            // fomulaTestCase.add("a->!(!b&!c)");
+            // fomulaTestCase.add("!a->(b&c)");
+            // fomulaTestCase.add("!a->!(b&c)");
+            // fomulaTestCase.add("!a->!!(b&c)");
+            // fomulaTestCase.add("!a->!(!b&!c)");
+            // fomulaTestCase.add("a->!c");
+            // ms = "(a&b)->c";
             // fomulaTestCase.add(ms);
-            ms = "(b&a)|(c&a)";
+            // ms = "(a&b)->!c";
+            // fomulaTestCase.add(ms);
+            // ms = "(a->b)&(a->c)";
+            // fomulaTestCase.add(ms);
+            // ms = "a|(b&c)";
+            // fomulaTestCase.add(ms);
+            // ms = "a&(b|c)";
+            // fomulaTestCase.add(ms);
+            // ms = "a|(b&(c&D))";
+            // fomulaTestCase.add(ms);
+            // ms = "(a|b)&(a|(c&d))";
+            // fomulaTestCase.add(ms);
+            // ms = "a&(b&c)";
+            // fomulaTestCase.add(ms);
+            // ms = "a&(b|c)";
+            // fomulaTestCase.add(ms);
+            // ms = "(b&c)&a";
+            // fomulaTestCase.add(ms);
+            // ms = "(b|c)&a";
+            // fomulaTestCase.add(ms);
+            // ms = "a&(b|(c|d))";
+            // fomulaTestCase.add(ms);
+            // ms = "(a&b)|(a&(c|d))";
+            // fomulaTestCase.add(ms);
+            // ms = "!!a&(b|c)";
+            // fomulaTestCase.add(ms);
+            // ms = "!(!a|!b|!c)";
+            // fomulaTestCase.add(ms);
+            // ms = "!((a&b)->c)";
+            // fomulaTestCase.add(ms);
+            // ms = "!((a&b)->!c)";
+            // fomulaTestCase.add(ms);
+            // ms = "!(a)";
+            // fomulaTestCase.add(ms);
+            // ms = "(a&(b&(c|d)))";
+            // fomulaTestCase.add(ms);
+            // ms = "a&(b|(c|b))";
+            // fomulaTestCase.add(ms);
+            // ms = "a&b";
+            // fomulaTestCase.add(ms);
+            // ms = "a|b";
+            // fomulaTestCase.add(ms);
+            // // ms = "(a&(b|(c|(a&d))))|(a&b)";
+            // // fomulaTestCase.add(ms);
+            // ms = "(b&a)|(c&a)";
+            // fomulaTestCase.add(ms);
+            // ms = "(a|b)&(a|(c&d))";
+            // fomulaTestCase.add(ms);
+            // ms = "(a&b)|(a&c)|(b&c)";
+            // fomulaTestCase.add(ms);
+            // ms = "(a|b|c)&(d|e|f)";
+            // fomulaTestCase.add(ms);
+            // ms = "(a&b&c)|(d&e&f)";
+            // fomulaTestCase.add(ms);
+            // ms = "(a&(b|!b))";
+            // fomulaTestCase.add(ms);
+            // ms = "(a|b)&(c|d)";
+            // fomulaTestCase.add(ms);
+            // ms = "(!a|b)|(!b|a)";
+            // fomulaTestCase.add(ms);
+            // ms = "(!a&a)";
+            // fomulaTestCase.add(ms);
+            // ms = "(a->b)|(b->a)";
+            // fomulaTestCase.add(ms);
+            // ms = "(P|!P)";
+            // fomulaTestCase.add(ms);
+            // ms = "c|(b&a)";
+            // fomulaTestCase.add(ms);
+            ms = "((b&a)|!c)&a";
             fomulaTestCase.add(ms);
-            ms = "(a|b)&(a|(c&d))";
+            ms = "((b&a)|c)&((b&a)|c)&a";
             fomulaTestCase.add(ms);
-            ms = "(a&b)|(a&c)|(b&c)";
+            ms = "(b|c)&(a|c)&a";
             fomulaTestCase.add(ms);
-            ms = "(a|b|c)&(d|e|f)";
+            ms = "(a&b)|(c&(d|f))";
             fomulaTestCase.add(ms);
-            ms = "(a&b&c)|(d&e&f)";
+            ms = "((d|f)&c)|(a&b)";
             fomulaTestCase.add(ms);
-            ms = "(a&(b|!b))";
+            ms = "((c|e)&(d|f))|(a&b)";
             fomulaTestCase.add(ms);
-            ms = "(a|b)&(c|d)";
+            ms = "((a&b)|(c&d))";
             fomulaTestCase.add(ms);
-            ms = "(!a|b)|(!b|a)";
+            ms = "((a|b)|(c|d))";
             fomulaTestCase.add(ms);
-            ms = "(!a&a)";
+            ms = "(a&b)|((c|d)&(e|f))";
             fomulaTestCase.add(ms);
-            ms = "(a->b)|(b->a)";
+            ms = "((b&a)|c)&a";
+            fomulaTestCase.add(ms);
+            ms = "c&(d|f)";
             fomulaTestCase.add(ms);
         }
         for(int i = 0; i < fomulaTestCase.size();i++){
@@ -868,6 +1018,7 @@ public class Solution{
         }
     }
 }
+//Test cases to check:
 //8
 //10
 //11
