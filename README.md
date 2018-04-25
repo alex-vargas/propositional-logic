@@ -8,6 +8,12 @@ Given any propositional logic formula:
 + Evaluate its truth value given truth values of the atoms
 + Decide whether the formula is satisfiable, a tautology, or a contradiction
 
+## Try it!
+Use the following propositional formula as an example
+```
+a->b
+```
+
 ## Installation
 Requirements:
 + Java JDK 1.8 or above
@@ -18,7 +24,7 @@ For Windows:
 + Compile the program with: javac Solution.java
 + Execute the program with: java Solution
 
-## Instruccions
+## Instructions
 The program will require a valid propositional formula using:
 + **Atoms:** All letter from our roman alphabet A = {a, . . . , z} are atoms and are therefore
 propositional formulas.
