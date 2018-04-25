@@ -62,7 +62,7 @@ public class Solution{
             printMenu();
             String action = readValue();
             //change to true to execute test cases
-            if(true){
+            if(false){
                 //Call test cases
                 callTestCases(action);
             }else
@@ -166,19 +166,22 @@ public class Solution{
         if(formulaCNF.equals(""))
             transformToCNF();
         if(formulaFullCNF.equals(""))
+        {
             formulaFullCNF = completeClauses(operator, formulaCNF.concat(operator)); //Iterate all clauses adding an extra operator to end of formula
-        formulaFullCNF = formulaFullCNF.substring(0, formulaFullCNF.length() - 1); //Remove extra operator
-        formulaFullCNF = addSpaces(formulaFullCNF);
+            formulaFullCNF = formulaFullCNF.substring(0, formulaFullCNF.length() - 1); //Remove extra operator
+            formulaFullCNF = addSpaces(formulaFullCNF);
+        }
     }
     private static void transformToFullDNF(){
         String operator = "|";
         String negOperator = "&";
         if(formulaDNF.equals(""))
             transformToDNF();
-        if(formulaFullDNF.equals(""))
+        if(formulaFullDNF.equals("")){
             formulaFullDNF = completeClauses(operator, formulaDNF.concat(operator)); //Iterate all clauses adding an extra operator to end of formula
-        formulaFullDNF = formulaFullDNF.substring(0, formulaFullDNF.length() - 1); //Remove extra operator
-        formulaFullDNF = addSpaces(formulaFullDNF);
+            formulaFullDNF = formulaFullDNF.substring(0, formulaFullDNF.length() - 1); //Remove extra operator
+            formulaFullDNF = addSpaces(formulaFullDNF);
+        }
     }
     private static void evaluateFormula() throws IOException{
         formulaEvaluated = "";
