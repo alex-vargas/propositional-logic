@@ -20,6 +20,7 @@ public class Solution{
     private static String formulaNNF = "";
     private static String formulaEvaluated = "";
     private static String satResult = "";
+    private static String resolutionResult = "";
 
     private static ArrayList<String> fomulaTestCase = new ArrayList<String>();
     private static void generalMenu(){
@@ -35,7 +36,8 @@ public class Solution{
         mprintln("5 Evaluate formula given truth values of the atoms");
         mprintln("6 Decide if formula is satisfiable, a tautology, or a contradiction");
         mprintln("7 Change formula");
-        mprintln("8 Exit");
+        mprintln("8 Test if knowledge base supports conclusion");
+        mprintln("9 Exit");
     }
     private static String inputFormula()throws IOException{
         mprintln("Instructions: Please enter a propositional formula");
@@ -118,6 +120,11 @@ public class Solution{
                 clearFormulas();
                 break;
             case "8":
+                mprintln("Testing if knowledge base supports conclusion");
+                executeResolution();
+                mprintln("Knowledge base supports conclusion: " + resolutionResult);
+                break;
+            case "9":
                 System.exit(0);
                 break;
         }
@@ -125,40 +132,35 @@ public class Solution{
     private static void clearFormulas(){
         formula = formulaNNF = formulaCNF = formulaDNF = formulaFullDNF = formulaFullCNF = formulaEvaluated = "";
     }
-    private static void transformToNNF(){
-        formulaNNF = formula;
-        removeImplication();
-        applyDeMorganLaw();
-        formulaNNF = removeParenthesesClause(formulaNNF, "&", "|");
-        if(!formulaNNF.startsWith("(") || !formulaNNF.endsWith(")"))
-            formulaNNF = "(" + formulaNNF + ")";
+    private static String transformToNNF(String formula){
+        formula = removeImplication(formula);
+        formula = applyDeMorganLaw(formula);
+        formula = removeParenthesesClause(formula, "&", "|");
+        if(!formula.startsWith("(") || !formula.endsWith(")"))
+            formula = "(" + formula + ")";
+        return formula;
     }
     private static void transformToCNF(){
-        String operator = "&";
-        String negOperator = "|";
         //Following algorithm from wikipedia https://en.wikipedia.org/wiki/Conjunctive_normal_form
         if(formulaNNF.equals(""))
-            transformToNNF();
-        if(formulaCNF.equals(""))
-            formulaCNF = iterateInnerSymbols(operator, negOperator, formulaNNF);
-        if(!validFormula(operator, negOperator, formulaCNF))
-            formulaCNF = iterateInnerSymbols(operator, negOperator, formulaCNF);
-        formulaCNF = removeParenthesesClause(formulaCNF, operator, negOperator);
-        formulaCNF = removeDuplicates(formulaCNF, operator, negOperator);
-        formulaCNF = addSpaces(formulaCNF);
+            formulaNNF = transformToNNF(formula);
+        if(formulaCNF.equals("")){
+            formulaCNF = getCNF(formulaNNF);
+        }
     }
     private static void transformToDNF(){
         String operator = "|";
         String negOperator = "&";
         if(formulaNNF.equals(""))
-            transformToNNF();
-        if(formulaDNF.equals(""))
+            formulaNNF = transformToNNF(formula);
+        if(formulaDNF.equals("")){
             formulaDNF = iterateInnerSymbols(operator, negOperator, formulaNNF);
-        if(!validFormula(operator, negOperator, formulaDNF))
-            formulaDNF = iterateInnerSymbols(operator, negOperator, formulaDNF);
-        formulaDNF = removeParenthesesClause(formulaDNF, operator, negOperator);
-        formulaDNF = removeDuplicates(formulaDNF, operator, negOperator);
-        formulaDNF = addSpaces(formulaDNF);
+            if(!validFormula(operator, negOperator, formulaDNF))
+                formulaDNF = iterateInnerSymbols(operator, negOperator, formulaDNF);
+            formulaDNF = removeParenthesesClause(formulaDNF, operator, negOperator);
+            formulaDNF = removeDuplicates(formulaDNF, operator, negOperator);
+            formulaDNF = addSpaces(formulaDNF);
+        }
     }
     private static void transformToFullCNF(){
         String operator = "&";
@@ -192,6 +194,121 @@ public class Solution{
         requestValues(); //Get atoms and request user to enter 0 or 1 per atom, replace values on formula
         formulaEvaluated = getValueOfGivenFormula(formulaEvaluated);
         formulaEvaluated = addSpaces(formulaEvaluated);
+    }
+    /**
+     * Read knowledge base and conclusion to execute resolution
+     */
+    private static void executeResolution() throws IOException{
+        List<String> kB = new ArrayList<String>();
+        int kBsize;
+        String conclusion;
+
+        //Read conclusion
+        //Ask for number of formulas in knowledge base
+        //Read knowledge base
+        //Transform conclusion and kb to CNF
+        //Negate conclusion
+        //Get clauses kB and conclusion (using AND as a separator)
+        
+        mprintln("Enter conclusion: ");
+        conclusion = readValue();
+        mprintln("How many formulas are contained in the Knolwedge Base: " );
+        kBsize = Integer.valueOf(readValue());
+        for(int i = 0; i < kBsize; i++){
+            mprintln("Enter formula " + (i + 1));
+            String temp = readValue();
+            temp = transformToNNF(temp);
+            kB.add(removeSpaces(getCNF(temp)));
+        }
+        //Negate conclusion
+        conclusion = "!(".concat(conclusion + ")");
+        conclusion = transformToNNF(conclusion);
+        conclusion = removeSpaces(getCNF(conclusion));
+
+        List<String> mClauses = new ArrayList<String>();
+        for(String mKB : kB)
+            for(String mClause : mKB.split("&"))
+                mClauses.add(mClause);
+        for(String mClause : conclusion.split("&"))
+            mClauses.add(mClause);
+
+        //HashMap that will store a map to formulas that contain counterpart of atoms
+        //hashset to store atoms that must be removed to find a contradiction
+        //string of initial formula to find a contradiction
+        //get atoms of formula and put them in set
+        //iterate the set to find a negation of atom to eliminate it, if no formula contains a counterpart then break iteration and try the whole process with another formula, if no formula remains then no contradiction can be found
+        HashMap<String, Integer> mAtomMap = new HashMap<String, Integer>();
+        Set<String> mAtomsToRemove;
+        String formulaTemp;
+        for(int listIterator = 0; listIterator < mClauses.size(); listIterator++){
+            mAtomMap.clear();
+            formulaTemp = mClauses.get(listIterator);
+            mAtomsToRemove = getAtoms(formulaTemp, true);
+            List<String> mAtomList = new ArrayList<String>();
+            for(String mAtom : mAtomsToRemove)
+                mAtomList.add(mAtom);
+            for(int i = 0; i < mAtomList.size(); i++){
+                String mAtom = mAtomList.get(i);
+                int j = -1;
+                if(mAtomMap.containsKey(mAtom.replace("!", "")))
+                    j = mAtomMap.get(mAtom.replace("!", ""));
+                else{
+                    String counterAtom = getCounterAtom(mAtom);
+                    for(int k = 0; k < mClauses.size(); k++){
+                        String mFormula = mClauses.get(k);
+                        if((getAtoms(mFormula, true)).contains(counterAtom)){
+                            j = k;
+                            k = mClauses.size();
+                        }
+                    }
+                }
+                if(j == -1)
+                    break;
+                formulaTemp = mClauses.get(j);
+                Set<String> mAtoms = getAtoms(formulaTemp, true);
+                boolean formulaIsUsefull = false;
+                String counterAtom;
+                for(String mAtom2 : mAtoms){
+                    counterAtom = getCounterAtom(mAtom2);
+                    if(mAtomList.contains(counterAtom)){
+                        formulaIsUsefull = true;
+                        break;
+                    }
+                }
+                if(formulaIsUsefull){
+                    for(String mAtom2 : mAtoms){
+                        counterAtom = getCounterAtom(mAtom2);
+                        if(mAtomList.contains(counterAtom)){
+                            mAtomList.remove(counterAtom);
+                            mAtomMap.put(mAtom2.replace("!",""), j);
+                        }
+                        else
+                            mAtomList.add(mAtom2);
+                        i = -1;
+                    }
+                }
+            }
+            if(mAtomList.isEmpty()){
+                resolutionResult = "true";
+                break;
+            }
+            else
+                resolutionResult = "false";
+        }
+    }
+    private static String getCounterAtom(String mAtom){
+        return mAtom.contains("!") ? mAtom.replace("!","") : "!" + mAtom;
+    }
+    private static String getCNF(String formula){
+        String operator = "&";
+        String negOperator = "|";
+        formula = iterateInnerSymbols(operator, negOperator, formula);
+        if(!validFormula(operator, negOperator, formula))
+            formula = iterateInnerSymbols(operator, negOperator, formula);
+        formula = removeParenthesesClause(formula, operator, negOperator);
+        formula = removeDuplicates(formula, operator, negOperator);
+        formula = addSpaces(formula);
+        return formula;
     }
     private static void satEvaluate(){
         if(formulaCNF.equals(""))
@@ -728,23 +845,24 @@ public class Solution{
         formula = mStrBldr.toString();
         return formula;
     }
-    private static void applyDeMorganLaw(){
+    private static String applyDeMorganLaw(String formula){
         //removeDoubleNegation()
-        formulaNNF = formulaNNF.replace("!!" , "");
+        formula = formula.replace("!!" , "");
         //applyNegationToParentheses
-        applyNegationToParentheses();
+        formula = applyNegationToParentheses(formula);
+        return formula;
     }
-    private static void applyNegationToParentheses(){
-        if(formulaNNF.contains("!(")){
-            int indexOfStartNegationParen = formulaNNF.indexOf("!(");
+    private static String applyNegationToParentheses(String formula){
+        if(formula.contains("!(")){
+            int indexOfStartNegationParen = formula.indexOf("!(");
             int indexOfEndNegationParen = indexOfStartNegationParen + 2;
             char nextSymbol;
             //get clause affected by negation
-            indexOfEndNegationParen = getIndexOfEndInnerClause(indexOfEndNegationParen, formulaNNF);
+            indexOfEndNegationParen = getIndexOfEndInnerClause(indexOfEndNegationParen, formula);
             String equivalentExpression = "(";
             //apply negations
             for(int i = indexOfStartNegationParen + 2; i < indexOfEndNegationParen; i++){
-                nextSymbol = formulaNNF.charAt(i);
+                nextSymbol = formula.charAt(i);
                 if(Character.isLetter(nextSymbol))
                     equivalentExpression = equivalentExpression.concat("!" + String.valueOf(nextSymbol));
                 else if(nextSymbol == '&')
@@ -753,27 +871,28 @@ public class Solution{
                     equivalentExpression = equivalentExpression.concat("&");
                 else if(nextSymbol == '!'){
                     i++;
-                    nextSymbol = formulaNNF.charAt(i);
+                    nextSymbol = formula.charAt(i);
                     if(Character.isLetter(nextSymbol))
                         equivalentExpression = equivalentExpression.concat(String.valueOf(nextSymbol));
                     else if(nextSymbol == '('){
-                        int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i + 1, formulaNNF);
+                        int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i + 1, formula);
                         equivalentExpression = equivalentExpression.concat("!");
-                        equivalentExpression = equivalentExpression.concat(formulaNNF.substring(i - 1, indexOfEndInnerNegatedClause + 1));
+                        equivalentExpression = equivalentExpression.concat(formula.substring(i - 1, indexOfEndInnerNegatedClause + 1));
                         i = indexOfEndInnerNegatedClause;
                     }
                 }else if(nextSymbol == '('){
-                    int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i + 1, formulaNNF);
+                    int indexOfEndInnerNegatedClause = getIndexOfEndInnerClause(i + 1, formula);
                     equivalentExpression = equivalentExpression.concat("!");
-                    equivalentExpression = equivalentExpression.concat(formulaNNF.substring(i, indexOfEndInnerNegatedClause + 1));
+                    equivalentExpression = equivalentExpression.concat(formula.substring(i, indexOfEndInnerNegatedClause + 1));
                     i = indexOfEndInnerNegatedClause;
                 }
             }
             // equivalentExpression = equivalentExpression.concat(")");
-            String stringToReplace = formulaNNF.substring(indexOfStartNegationParen, indexOfEndNegationParen);
-            formulaNNF = formulaNNF.replace(stringToReplace, equivalentExpression);
-            applyDeMorganLaw();
+            String stringToReplace = formula.substring(indexOfStartNegationParen, indexOfEndNegationParen);
+            formula = formula.replace(stringToReplace, equivalentExpression);
+            formula = applyDeMorganLaw(formula);
         }
+        return formula;
     }
     private static int getIndexOfStartInnerClause(int index, String formula){
         int numberOfParentheses = 1;
@@ -813,12 +932,12 @@ public class Solution{
         index--;
         return index;
     }
-    private static void removeImplication(){
+    private static String removeImplication(String formula){
         //removing p implies q
-        if(formulaNNF.contains("->")){
-            int indexOfImpl = formulaNNF.indexOf("-");
+        if(formula.contains("->")){
+            int indexOfImpl = formula.indexOf("-");
             int indexOfStartOfP = indexOfImpl - 1;
-            char previousSymbol = formulaNNF.charAt(indexOfStartOfP);
+            char previousSymbol = formula.charAt(indexOfStartOfP);
             String p = "";
             //if previous symbol is closing parentheses, find corresponding opening parentheses and use it as 'p'
             if(previousSymbol == ')'){
@@ -826,12 +945,12 @@ public class Solution{
                     indexOfStartOfP--;
                     if(indexOfStartOfP == -1)
                         break;
-                    previousSymbol = formulaNNF.charAt(indexOfStartOfP);
+                    previousSymbol = formula.charAt(indexOfStartOfP);
                 }
             }
             //If before previousSymbol there is a not, find where the first 'negation' is
             if(indexOfStartOfP != 0)
-                previousSymbol = formulaNNF.charAt(indexOfStartOfP - 1);
+                previousSymbol = formula.charAt(indexOfStartOfP - 1);
             if(previousSymbol == '!'){
                 while(previousSymbol == '!'){
                     indexOfStartOfP--;
@@ -839,32 +958,33 @@ public class Solution{
                         indexOfStartOfP ++;
                         break;
                     }
-                    previousSymbol = formulaNNF.charAt(indexOfStartOfP);
+                    previousSymbol = formula.charAt(indexOfStartOfP);
                 }
             }
-            p = formulaNNF.substring(indexOfStartOfP, indexOfImpl);
+            p = formula.substring(indexOfStartOfP, indexOfImpl);
             int indexOfEndOfQ = indexOfImpl + 2;
-            char nextSymbol = formulaNNF.charAt(indexOfEndOfQ );
+            char nextSymbol = formula.charAt(indexOfEndOfQ );
             String q = "";
             //If next symbol is negation
             if(nextSymbol == '!'){
                 while(nextSymbol == '!'){
                     indexOfEndOfQ++;
-                    nextSymbol = formulaNNF.charAt(indexOfEndOfQ);
+                    nextSymbol = formula.charAt(indexOfEndOfQ);
                 }
             }
             //if next symbol is opening parentheses, find corresponding closing parentheses and use it as 'q'
             if(nextSymbol == '('){
                 while(nextSymbol != ')'){
                     indexOfEndOfQ++;
-                    nextSymbol = formulaNNF.charAt(indexOfEndOfQ);
+                    nextSymbol = formula.charAt(indexOfEndOfQ);
                 }
             }
-            q = formulaNNF.substring(indexOfImpl + 2, indexOfEndOfQ + 1);
-            String implicationEquivalency = "(!" + p + "|" + q + ")";
-            formulaNNF = formulaNNF.replace(p + "->" + q, implicationEquivalency);
-            removeImplication();
+            q = formula.substring(indexOfImpl + 2, indexOfEndOfQ + 1);
+            String implicationEquivalency = "(!" + p + ")|" + q + "";
+            formula = formula.replace(p + "->" + q, implicationEquivalency);
+            formula = removeImplication(formula);
         }
+        return formula;
     }
 
     private static void callTestCases(String action) throws IOException{
@@ -979,6 +1099,8 @@ public class Solution{
             ms = "((b&a)|c)&a";
             fomulaTestCase.add(ms);
             ms = "c&(d|f)";
+            fomulaTestCase.add(ms);
+            ms = "!(!a->(!b&a))";
             fomulaTestCase.add(ms);
         }
         for(int i = 0; i < fomulaTestCase.size();i++){
