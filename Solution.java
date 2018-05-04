@@ -1,13 +1,60 @@
 import java.io.*;
 import java.util.*;
 
+/**
+ * <h1>University of Texas at El Paso - Logical Foundations of Computer Science</h1>
+ * <h2>Programming assignment:</h2>
+ * <p>
+ * Given any propositional logic formula:
+ * <ul>
+ *     <li>Transform it into CNF</li>
+ *     <li>Transform it into DNF</li>
+ *     <li>Transform it into full DNF</li>
+ *     <li>Transform it into full CNF</li>
+ *     <li>Evaluate its truth value given truth values of the atoms</li>
+ *     <li>Decide whether the formula is satisfiable, a tautology, or a contradiction</li>
+ * </ul>
+ * <p style='text-align:justify'>
+ *  Copyright (C) 2018 <a href="mailto:avargas.rava@gmail.com">Alejandro Vargas</a>
+ * <br>
+ * <br>This program is free software: you can redistribute it and/or modify
+ * <br>it under the terms of the GNU General Public License as published by
+ * <br>the Free Software Foundation, either version 3 of the License, or
+ * <br>(at your option) any later version.
+ * <br>
+ * <br>This program is distributed in the hope that it will be useful,
+ * <br>but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * <br>MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * <br>GNU General Public License for more details.
+ * <br>
+ * <br>You should have received a copy of the GNU General Public License
+ * <br>along with this program.  If not, see <a href="http://www.gnu.org/licenses"> here </a>.
+ * @author <a href="mailto:avargas.rava@gmail.com">Alejandro Vargas</a>
+ * @version  1.0, 05/04/18
+ */
 public class Solution{
+    private static String author = "Alejandro Vargas";
+    private static String lastUpdate = "May the Fourth be with you...(May/4th/2018)";
+    private static boolean debug = false;
+    /**
+     * Method to print to screen and avoid typing "System.out.println()".
+     * @param toPrint [description]
+     */
     private static void mprintln(String toPrint){
     	System.out.println(toPrint);
     }
+    /**
+     * Generic method that prints whatever it receives.
+     * @param toPrint Object to print to screen
+     */
     private static void mprintln(Object toPrint){
     	mprintln(String.valueOf(toPrint));
     }
+    /**
+     * The main method, it is going to be executed when the program starts.
+     * @param  args        No arguments are required
+     * @throws IOException On input error.
+     */
     public static void main(String[] args) throws IOException{
         callMe();
     }
@@ -23,9 +70,15 @@ public class Solution{
     private static String resolutionResult = "";
 
     private static ArrayList<String> fomulaTestCase = new ArrayList<String>();
+    /**
+     * This method will print a welcome message.
+     */
     private static void generalMenu(){
         mprintln("Programming Assignment * Course: CS5303 - Logical Foundations of Computer Science");
     }
+    /**
+     * This method will print a menu.
+     */
     private static void printMenu(){
         generalMenu();
         mprintln("Menu:");
@@ -39,6 +92,12 @@ public class Solution{
         mprintln("8 Test if knowledge base supports conclusion");
         mprintln("9 Exit");
     }
+    /**
+     * This method will require the user for a formula.
+     * @return String Formula
+     * @exception IOException   On input error.
+     * @see  IOException
+     */
     private static String inputFormula()throws IOException{
         mprintln("Instructions: Please enter a propositional formula");
         mprintln("Atom: Letter from the roman alphabet A = {a,...,z}");
@@ -54,6 +113,10 @@ public class Solution{
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         return br.readLine();
     }
+    /**
+     * Function that handles which menu to print.
+     * @throws IOException On input error.
+     */
     public static void callMe() throws IOException{
         //Start of the program, user has to enter a propositional formula
         if(formula.equals("")){
@@ -64,7 +127,7 @@ public class Solution{
             printMenu();
             String action = readValue();
             //change to true to execute test cases
-            if(false){
+            if(debug){
                 //Call test cases
                 callTestCases(action);
             }else
@@ -74,6 +137,11 @@ public class Solution{
         readValue();
         callMe();
     }
+    /**
+     * Execute the user's desired action
+     * @param  action      Action to be executed
+     * @throws IOException On input error.
+     */
     private static void executeAction(String action) throws IOException{
         switch(action){
             case "1":
@@ -125,13 +193,24 @@ public class Solution{
                 mprintln("Knowledge base supports conclusion: " + resolutionResult);
                 break;
             case "9":
+                mprintln("Program terminated.");
+                mprintln("Author: " + author);
+                mprintln("Last update: " + lastUpdate);
                 System.exit(0);
                 break;
         }
     }
+    /**
+     * Clear all formulas
+     */
     private static void clearFormulas(){
         formula = formulaNNF = formulaCNF = formulaDNF = formulaFullDNF = formulaFullCNF = formulaEvaluated = "";
     }
+    /**
+     * Transform a given formula to NNF.
+     * @param  formula The formula to transform
+     * @return String The NNF formula
+     */
     private static String transformToNNF(String formula){
         formula = removeImplication(formula);
         formula = applyDeMorganLaw(formula);
@@ -140,6 +219,9 @@ public class Solution{
             formula = "(" + formula + ")";
         return formula;
     }
+    /**
+     * Transform to CNF.
+     */
     private static void transformToCNF(){
         //Following algorithm from wikipedia https://en.wikipedia.org/wiki/Conjunctive_normal_form
         if(formulaNNF.equals(""))
@@ -148,6 +230,9 @@ public class Solution{
             formulaCNF = getCNF(formulaNNF);
         }
     }
+    /**
+     * Transform to DNF.
+     */
     private static void transformToDNF(){
         String operator = "|";
         String negOperator = "&";
@@ -162,6 +247,9 @@ public class Solution{
             formulaDNF = addSpaces(formulaDNF);
         }
     }
+    /**
+     * Transform to Full CNF
+     */
     private static void transformToFullCNF(){
         String operator = "&";
         String negOperator = "|";
@@ -174,6 +262,9 @@ public class Solution{
             formulaFullCNF = addSpaces(formulaFullCNF);
         }
     }
+    /**
+     * Transform to Full DNF
+     */
     private static void transformToFullDNF(){
         String operator = "|";
         String negOperator = "&";
@@ -185,6 +276,10 @@ public class Solution{
             formulaFullDNF = addSpaces(formulaFullDNF);
         }
     }
+    /**
+     * Evaluate the given formula with specific values for the atoms.
+     * @throws IOException On input error.
+     */
     private static void evaluateFormula() throws IOException{
         formulaEvaluated = "";
         if(formulaCNF.equals(""))
@@ -196,7 +291,8 @@ public class Solution{
         formulaEvaluated = addSpaces(formulaEvaluated);
     }
     /**
-     * Read knowledge base and conclusion to execute resolution
+     * Read knowledge base and conclusion to execute resolution.
+     * @throws IOException On input error.
      */
     private static void executeResolution() throws IOException{
         List<String> kB = new ArrayList<String>();
@@ -296,9 +392,19 @@ public class Solution{
                 resolutionResult = "false";
         }
     }
+    /**
+     * Get negation of given atom
+     * @param  mAtom The atom to analyze
+     * @return       
+     */
     private static String getCounterAtom(String mAtom){
         return mAtom.contains("!") ? mAtom.replace("!","") : "!" + mAtom;
     }
+    /**
+     * Return a CNF formula logically equivalent to the one recieved.
+     * @param  formula The formula to transform to CNF
+     * @return         String CNF formula
+     */
     private static String getCNF(String formula){
         String operator = "&";
         String negOperator = "|";
@@ -310,6 +416,9 @@ public class Solution{
         formula = addSpaces(formula);
         return formula;
     }
+    /**
+     * Evaluate if formula is satisfiable, tautology or contradiction
+     */
     private static void satEvaluate(){
         if(formulaCNF.equals(""))
             transformToCNF();
@@ -324,6 +433,10 @@ public class Solution{
             mAtomsLHM.put(mAtom, "0");
         executeTruthValues(mAtomsLHM);
     }
+    /**
+     * Execute values and analyze if it is satisfiable, tautology or contradiction
+     * @param mAtomsLHM A list of atoms and their truth values
+     */
     private static void executeTruthValues(LinkedHashMap<String, String> mAtomsLHM){
         String satFormula = formulaCNF;
         for(String mAtom : mAtomsLHM.keySet())
@@ -351,6 +464,11 @@ public class Solution{
         }
         executeTruthValues(mAtomsLHM);
     }
+    /**
+     * Return formula after removing 0's and 1's depending on the operator
+     * @param  mFormula Formula to apply operators on 0's and 1's
+     * @return          String Formula after 0's and 1's has been analyzed
+     */
     private static String applyGeneralFormula(String mFormula){
         if(mFormula.contains("0"))
             mFormula = "0";
@@ -362,6 +480,11 @@ public class Solution{
             mFormula = "1";
         return mFormula;
     }
+    /**
+     * Apply "OR" to parentheses
+     * @param  mFormula Formula to apply or
+     * @return          String Formula after applying OR
+     */
     private static String applyOrToParentheses(String mFormula){
         StringBuilder mStrBldr = new StringBuilder(mFormula);
         int i;
@@ -384,13 +507,13 @@ public class Solution{
         return mStrBldr.toString();
     }
     /**
-     * Replace !0 with 1 and !1 with 0
+     * Replace !0 with 1 and !1 with 0.
      */
     private static String applyNegationToAtoms(String formula){
         return formula.replaceAll("!0", "1").replaceAll("!1", "0");
     }
     /**
-     * Evaluate formula that has values, forula has to be cnf
+     * Evaluate formula that has values, forula has to be cnf.
      * @param  mFormula [description]
      * @return          [description]
      */
@@ -403,7 +526,7 @@ public class Solution{
         return mFormula;
     }
     /**
-     * Get atoms and request user to enter 0 or 1 per atom, replace values on formula
+     * Get atoms and request user to enter 0 or 1 per atom, replace values on formula.
      */
     private static void requestValues() throws IOException{
         mprintln("Please give a 0 for false, 1 for true, or just 'enter' to not specify a value to the following atoms.");
@@ -415,9 +538,20 @@ public class Solution{
                 formulaEvaluated = formulaEvaluated.replaceAll(mAtom, mValue);
         }
     }
+    /**
+     * Remove spaces
+     * @param  formula Formula with spaces
+     * @return         String Formula withouth spaces
+     */
     private static String removeSpaces(String formula){
         return formula.replaceAll("\\s+","");
     }
+    /**
+     * Complete clauses in Full CNF and Full DNF
+     * @param  operator Operator
+     * @param  formula  Formula
+     * @return          String Full CNF or Full DNF formula
+     */
     private static String completeClauses(String operator, String formula){
         int i, index = 0;
         String negOperator = operator.equals("&") ? "|" : "&";
@@ -454,6 +588,12 @@ public class Solution{
         }
         return formula;
     }
+    /**
+     * Retrieve atoms on formula
+     * @param  formula         Formula
+     * @param  includeNegation If true, will return atoms and negation of atoms, otherwise it will ignore negations
+     * @return Set<String> A set of atoms
+     */
     private static Set<String> getAtoms(String formula, boolean includeNegation){
         Set<String> mAtoms = new HashSet<String>();
         String mAtom = "";
@@ -466,6 +606,13 @@ public class Solution{
         }
         return mAtoms;
     }
+    /**
+     * Remove duplicates in formula
+     * @param  formula     Formula to remove duplicates
+     * @param  operator    Operator to iterate
+     * @param  negOperator Negation of operator to iterate
+     * @return String Formula without duplicates
+     */
     private static String removeDuplicates(String formula, String operator, String negOperator){
         formula = formula.concat(operator);
         Set<String> mClauseSet = new HashSet<String>();
@@ -485,6 +632,13 @@ public class Solution{
         }
         return equivalentExpression;
     }
+    /**
+     * Remove duplicate atoms on a clause
+     * @param  formula     Formula to remove duplicates
+     * @param  operator    Operator to iterate
+     * @param  negOperator Negation of operator to iterate
+     * @return String Formula without duplicates
+     */
     private static String removeAtomsDuplicateOnClause(String formula, String operator, String negOperator){
         Set<String> mAtoms = getAtoms(formula, true);
         Set<String> mAtoms2 = getAtoms(formula, true);
@@ -519,7 +673,7 @@ public class Solution{
         return equivalentExpression;
     }
     /**
-     * Check if formula is in required logic family
+     * Check if formula is in required logic family.
      * @param  operator    How the formula should be (CNF or DNF)
      * @param  negOperator [description]
      * @param  formula     [description]
@@ -539,13 +693,14 @@ public class Solution{
         return true;
     }
     /**
-     * Distribute symbols inside inner clauses, remove double parentheses
+     * Distribute symbols inside inner clauses, remove double parentheses.
      * @param  operator    Operator that indicates type of formula being created
      * @param  negOperator Operator to be distributed
      * @param  formula     Formula to be transformed
      * @return String Formula after being distributed
      */
     private static String distributeSymbols(String operator, String negOperator, String formula){
+        //The following code is deprecated
         //if formula contains (( or ))
             //if clause contains | xor &
                 //remove all inner parentheses
@@ -610,7 +765,7 @@ public class Solution{
         return formula;
     }
    /** 
-    * Iterate inner clause and distribute negOperator
+    * Iterate inner clause and distribute negOperator.
     * @param operator Operator that indicates type of formula being created
     * @param negOperator Operator that should be distributed
     * @param formula Formula that will be treated
@@ -665,7 +820,7 @@ public class Solution{
     }
     /**
      * Gernerate permutations given a list of list of atoms
-     * obtained from: https://stackoverflow.com/questions/17192796/generate-all-combinations-from-multiple-lists
+     * obtained from: https://stackoverflow.com/questions/17192796/generate-all-combinations-from-multiple-lists.
      * @param Lists   List of list of atoms
      * @param result  List of required permutations
      * @param depth   [description]
@@ -682,8 +837,7 @@ public class Solution{
                 operator, negOperator);
     }
     /**
-    *   Distribute given symbol in formula
-    *
+    *   Distribute given symbol in formula.
     **/
     private static String distribute(String operator, String negOperator, String formula){
         if(formula.startsWith("(") 
@@ -744,8 +898,7 @@ public class Solution{
         return mFormulaBldr.toString();
     }
     /**
-    *   Move atom to distribute to the right of parentheses
-    *
+    *   Move atom to distribute to the right of parentheses.
     **/
     private static String moveAtomToDistributeRightParentheses(String formula, String operator, String negOperator){
         for (int i = -1; (i = formula.indexOf(negOperator + "(", i + 1)) != -1; i++) {
@@ -767,6 +920,12 @@ public class Solution{
         }
         return formula;
     }
+    /**
+     * Get symbol to distribute backwards
+     * @param  index   Index of symbol
+     * @param  formula Formula
+     * @return String Symbol to distribute
+     */
     private static String getSymbolToDistributeBackwards(int index, String formula){
         String symbolToDistribute = "";
         char symbol = formula.charAt(index);
@@ -785,6 +944,12 @@ public class Solution{
         return symbolToDistribute;
 
     }
+    /**
+     * Get symbol to distribute
+     * @param  index   Index of symbol
+     * @param  formula Formula
+     * @return String Symbol to distribute
+     */
     private static String getSymbolToDistribute(int index, String formula){
         String symbolToDistribute = "";
         index++;
@@ -814,7 +979,14 @@ public class Solution{
         }
         return formulaSpaces;
     }
-    //deprecated
+    /**
+     * Remove parentheses
+     * @deprecated This function is deprecated
+     * @param  formula     Formula
+     * @param  operator    Operator
+     * @param  negOperator Negation of operator
+     * @return String Formula without parentheses
+     */
     private static String removeParentheses(String formula, String operator, String negOperator){
         if(formula.startsWith("(")){
             int indexOfEndOfParen = getIndexOfEndInnerClause(1, formula);
@@ -826,7 +998,13 @@ public class Solution{
         mprintln("This function is deprectaed! -----------------------");
         return formula;
     }
-    //Remove parentheses inside a clause
+    /**
+    * Remove parentheses inside a clause
+    * @param operator Operator that indicates type of formula being created
+    * @param negOperator Operator that should be distributed
+    * @param formula Formula that will be treated
+    * @return String Formula after being distributed
+    */
     private static String removeParenthesesClause(String formula, String operator, String negOperator){
         StringBuilder mStrBldr = new StringBuilder(formula);
         int index = 0;
@@ -845,6 +1023,11 @@ public class Solution{
         formula = mStrBldr.toString();
         return formula;
     }
+    /**
+     * Apply De Morgan's Law
+    * @param formula Formula that will be treated
+    * @return String Formula after De Morgan has been applied
+     */
     private static String applyDeMorganLaw(String formula){
         //removeDoubleNegation()
         formula = formula.replace("!!" , "");
@@ -852,6 +1035,11 @@ public class Solution{
         formula = applyNegationToParentheses(formula);
         return formula;
     }
+    /**
+     * Apply negation to parentheses
+     * @param  formula Formula
+     * @return String Formula after negation has been applied to parentheses
+     */
     private static String applyNegationToParentheses(String formula){
         if(formula.contains("!(")){
             int indexOfStartNegationParen = formula.indexOf("!(");
@@ -894,6 +1082,13 @@ public class Solution{
         }
         return formula;
     }
+    /**
+     * Get index of start of parentheses
+     * Will return the index of a openning parentheses given closing parentheses
+     * @param  index   Index of closing parentheses
+     * @param  formula Formula
+     * @return int Index of openning parentheses
+     */
     private static int getIndexOfStartInnerClause(int index, String formula){
         int numberOfParentheses = 1;
         char nextSymbol;
@@ -911,7 +1106,7 @@ public class Solution{
         return index;
     }
     /**
-     * Get index that belongs to the ending parentheses (end of clause)
+     * Get index that belongs to the ending parentheses (end of clause).
      * @param index Index to start reading symbols (not the opening parentheses)
      * @param formula Propositional formula to read symbols
      * @return int The index of the closing parentheses
@@ -932,6 +1127,11 @@ public class Solution{
         index--;
         return index;
     }
+    /**
+     * Removing implication in a given formula
+     * @param  formula Formula
+     * @return String Formula without implication
+     */
     private static String removeImplication(String formula){
         //removing p implies q
         if(formula.contains("->")){
@@ -986,121 +1186,16 @@ public class Solution{
         }
         return formula;
     }
-
+    /**
+     * If this program is in debug mode, it will execute this function
+     * @param  action      Action to be executed
+     * @throws IOException On input error.
+     */
     private static void callTestCases(String action) throws IOException{
         if(fomulaTestCase.isEmpty())
         {
             String ms = "";
-            fomulaTestCase.add("a");
-            fomulaTestCase.add("a->b");
-            fomulaTestCase.add("a->!b");
-            fomulaTestCase.add("a->!!b");
-            fomulaTestCase.add("!a");
-            fomulaTestCase.add("!a->b");
-            fomulaTestCase.add("!a->!b");
-            fomulaTestCase.add("!a->!!b");
-            fomulaTestCase.add("a->(b&c)");
-            fomulaTestCase.add("a->!(b&c)");
-            fomulaTestCase.add("a->!!(b&c)");
-            fomulaTestCase.add("a->!(!b&!c)");
-            fomulaTestCase.add("!a->(b&c)");
-            fomulaTestCase.add("!a->!(b&c)");
-            fomulaTestCase.add("!a->!!(b&c)");
-            fomulaTestCase.add("!a->!(!b&!c)");
-            fomulaTestCase.add("a->!c");
-            ms = "(a&b)->c";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)->!c";
-            fomulaTestCase.add(ms);
-            ms = "(a->b)&(a->c)";
-            fomulaTestCase.add(ms);
-            ms = "a|(b&c)";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|c)";
-            fomulaTestCase.add(ms);
-            ms = "a|(b&(c&D))";
-            fomulaTestCase.add(ms);
-            ms = "(a|b)&(a|(c&d))";
-            fomulaTestCase.add(ms);
-            ms = "a&(b&c)";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|c)";
-            fomulaTestCase.add(ms);
-            ms = "(b&c)&a";
-            fomulaTestCase.add(ms);
-            ms = "(b|c)&a";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|(c|d))";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)|(a&(c|d))";
-            fomulaTestCase.add(ms);
-            ms = "!!a&(b|c)";
-            fomulaTestCase.add(ms);
-            ms = "!(!a|!b|!c)";
-            fomulaTestCase.add(ms);
-            ms = "!((a&b)->c)";
-            fomulaTestCase.add(ms);
-            ms = "!((a&b)->!c)";
-            fomulaTestCase.add(ms);
-            ms = "!(a)";
-            fomulaTestCase.add(ms);
-            ms = "(a&(b&(c|d)))";
-            fomulaTestCase.add(ms);
-            ms = "a&(b|(c|b))";
-            fomulaTestCase.add(ms);
-            ms = "a&b";
-            fomulaTestCase.add(ms);
-            ms = "a|b";
-            fomulaTestCase.add(ms);
-            // ms = "(a&(b|(c|(a&d))))|(a&b)";
-            // fomulaTestCase.add(ms);
-            ms = "(b&a)|(c&a)";
-            fomulaTestCase.add(ms);
-            ms = "(a|b)&(a|(c&d))";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)|(a&c)|(b&c)";
-            fomulaTestCase.add(ms);
-            ms = "(a|b|c)&(d|e|f)";
-            fomulaTestCase.add(ms);
-            ms = "(a&b&c)|(d&e&f)";
-            fomulaTestCase.add(ms);
-            ms = "(a&(b|!b))";
-            fomulaTestCase.add(ms);
-            ms = "(a|b)&(c|d)";
-            fomulaTestCase.add(ms);
-            ms = "(!a|b)|(!b|a)";
-            fomulaTestCase.add(ms);
-            ms = "(!a&a)";
-            fomulaTestCase.add(ms);
-            ms = "(a->b)|(b->a)";
-            fomulaTestCase.add(ms);
-            ms = "(P|!P)";
-            fomulaTestCase.add(ms);
-            ms = "c|(b&a)";
-            fomulaTestCase.add(ms);
-            ms = "((b&a)|!c)&a";
-            fomulaTestCase.add(ms);
-            ms = "((b&a)|c)&((b&a)|c)&a";
-            fomulaTestCase.add(ms);
-            ms = "(b|c)&(a|c)&a";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)|(c&(d|f))";
-            fomulaTestCase.add(ms);
-            ms = "((d|f)&c)|(a&b)";
-            fomulaTestCase.add(ms);
-            ms = "((c|e)&(d|f))|(a&b)";
-            fomulaTestCase.add(ms);
-            ms = "((a&b)|(c&d))";
-            fomulaTestCase.add(ms);
-            ms = "((a|b)|(c|d))";
-            fomulaTestCase.add(ms);
-            ms = "(a&b)|((c|d)&(e|f))";
-            fomulaTestCase.add(ms);
-            ms = "((b&a)|c)&a";
-            fomulaTestCase.add(ms);
-            ms = "c&(d|f)";
-            fomulaTestCase.add(ms);
-            ms = "!(!a->(!b&a))";
+            ms = "a->b";
             fomulaTestCase.add(ms);
         }
         for(int i = 0; i < fomulaTestCase.size();i++){
@@ -1112,16 +1207,3 @@ public class Solution{
         }
     }
 }
-//Test cases to check:
-//8
-//10
-//11
-//12
-//14
-//20
-//22
-//23
-//27
-//40
-// a&(b|c|b)
-// (a&(b|!b))
